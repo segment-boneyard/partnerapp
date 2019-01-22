@@ -1,6 +1,6 @@
 # Segment Partner App
 
-A Node.js app that demonstrates how to build a Segment Application.
+A Node.js app that demonstrates how to build a Segment App.
 
 ### Create Segment Account and PAT
 
@@ -47,7 +47,7 @@ $ TOKEN=<token>
 $ curl \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
-    "application": {
+    "app": {
       "display_name": "myapp",
       "description": "My cool read-only app",
       "client_uri": "https://example.com",
