@@ -17,7 +17,7 @@ const idUri = 'https://id.segmentapis.com'
 const dest = 'clearbrain'
 // change this to the API key provisioned for your customer in your system
 const destAPIKey = 'abcd1234'
-// destination/xyz means that the app only has access to that single destination on the user selected source
+// destination/<slug> means that the app only has access to that single destination on the user selected source
 const scope = `destination/${dest}`
 
 const clientId = process.env.CLIENT_ID

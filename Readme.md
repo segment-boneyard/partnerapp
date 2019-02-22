@@ -102,6 +102,16 @@ $ echo CLIENT_SECRET=YvpqemW8TI_~ >> .env
 
 ### OAuth Flow
 
+Change these three vars at the top in index.js
+```shell
+// change this to the dest you are trying to manage for the user
+const dest = 'clearbrain'
+// change this to the API key provisioned for your customer in your system
+const destAPIKey = 'abcd1234'
+// destination/<slug> means that the app only has access to that single destination on the user selected source
+const scope = `destination/${dest}`
+```
+
 Install node.js if you don't have it already. And then initiate the OAuth flow
 
 ```shell
