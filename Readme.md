@@ -15,7 +15,7 @@ Then for this demo create a source on Segment first. Login to Segment > Click So
 Then create a personal access token (PAT) using the API. You can find the workspace when you are logged into the Segment Web UI in the URL. If the URL was https://app.segment.com/business/overview, the workspace would be business.
 
 ```shell
-$ USER=<segment signed up email>
+$ USER=<email>
 $ PASS=<Segment pass>
 $ WORKSPACE=<Segment workspace>
 
