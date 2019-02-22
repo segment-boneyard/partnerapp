@@ -11,8 +11,15 @@ if (process.env.CLIENT_ID === undefined || process.env.CLIENT_SECRET === undefin
     process.exit(1);
 }
 
-const apiUri = 'https://platform.segmentapis.build'
-const idUri = 'https://id.segmentapis.build'
+const apiUri = 'https://platform.segmentapis.com'
+const idUri = 'https://id.segmentapis.com'
+// change this to the dest you are trying to manage for the user
+const dest = 'clearbrain'
+// change this to the API key provisioned for your customer in your system
+const destAPIKey = 'abcd1234'
+// you can use workspace or workspace:read scope instead of destination/xyz for creating an app that has access to all of the user's resources
+// destination/xyz means that the app only has access to that single destination on the user selected source
+const scope = `destination/${dest}`
 
 const clientId = process.env.CLIENT_ID
 const clientSecret = process.env.CLIENT_SECRET
@@ -26,9 +33,7 @@ var segmentAuth = new ClientOAuth2({
     accessTokenUri: `${idUri}/oauth2/token`,
     authorizationUri: `${idUri}/oauth2/auth`,
     redirectUri: 'http://localhost:8888/auth/segment/callback',
-    // you can use workspace or workspace:read scope instead of destination/xyz for creating an app that has access to all of the user's resources
-    // destination/xyz means that the app only has access to that single destination on the user selected source
-    scopes: ['destination/google-analytics'], 
+    scopes: [scope], 
     state: crypto.randomBytes(20).toString('hex'),
 })
 
@@ -60,17 +65,65 @@ async function sourceList(installToken, workspaceName) {
     return reqBearer(installToken, "GET", `${apiUri}/v1beta/${workspaceName}/sources`)
 }
 
-async function workspaceGet(installToken, workspaceName) {
-    return reqBearer(installToken, "GET", `${apiUri}/v1beta/${workspaceName}`)
-}
-
 // all scopes including destination/xyz scope have access to these two APIs
 async function tokenGet(clientId, clientSecret, installName) {
     return req("GET", `${apiUri}/v1beta/${installName}/token`, undefined, undefined, clientId, clientSecret)
 }
 async function destinationGet(installToken, sourceName) {
-    return reqBearer(installToken, "GET", `${apiUri}/v1beta/${sourceName}/destinations/google-analytics`)
     // note: even though the scope is destination/xyz the APIs use destinations/xyz (plural)
+    return reqBearer(installToken, "GET", `${apiUri}/v1beta/${sourceName}/destinations/${dest}`)
+}
+
+async function destinationCreate(installToken, workspaceName, sourceName) {
+    // note: 
+    // 1. even though the scope is destination/xyz the APIs use destinations/xyz (plural)
+    // 2. The sourcename is fully qualified so it would be something like: workspaces/business/sources/js/destinations/clearbrain
+    // 3. Similarly the config[0].name is not just apiKey but the full path to the apiKey so something like: workspaces/business/sources/js/destinations/clearbrain/config/apiKey
+    // 4. the config[0].value populates the users provisioned API key in your system that we set up top
+    const body = {
+        "destination": {
+                "name": `${sourceName}/destinations/${dest}`,
+                "connection_mode": "CLOUD",
+                "config": [
+                    {
+                        "name": `${sourceName}/destinations/${dest}/config/apiKey`,
+                        "display_name": "API Key",
+                        "value": `${destAPIKey}`
+                    }
+                ],
+                "enabled": true
+        }
+    }
+    return reqBearer(installToken, "POST", `${apiUri}/v1beta/${sourceName}/destinations`, body)
+}
+
+async function destinationUpdate(installToken, workspaceName, sourceName) {
+    // note: 
+    // 1. look at the notes in destinationCreate
+    // 2. the update_mask field is required during updates and tells the API which fields you are going to update. 
+    //    Without the update_mask the system wouldnt know whether you want to clear out the rest of the fields you didnt specify, or do a partial update
+    const body = {
+        "destination": {
+                "name": `${sourceName}/destinations/${dest}`,
+                "connection_mode": "CLOUD",
+                "config": [
+                    {
+                        "name": `${sourceName}/destinations/${dest}/config/apiKey`,
+                        "display_name": "API Key",
+                        "value": `${destAPIKey}`
+                    }
+                ],
+                "enabled": true
+        },
+        "update_mask": {
+            "paths": [
+                "destination.enabled",
+                "destination.config",
+                "destination.connection_mode"   
+            ]
+        }
+    }
+    return reqBearer(installToken, "PATCH", `${apiUri}/v1beta/${sourceName}/destinations/${dest}`, body)
 }
 
 app.get('/auth/segment', function (req, res) {
@@ -84,21 +137,21 @@ app.get('/auth/segment/callback', function (req, res) {
 
     segmentAuth.code.getToken(req.originalUrl)
         .then(function (installToken) {
-            // Store the install token into a database. The source_name is only included if you used destination/xyz scope and it indicates which scope your app was given permission to.
+            // Store the install token into a database. The source_name is only included if you used destination/xyz scope and it indicates which source your app was given permission to.
             // { data: {access_token: "...", app_name: "apps/10", install_name: "installs/123", workspace_names: ["workspaces/myworkspace"], source_names: ["workspaces/myworkspace/source/mysource"]} }
             console.log("install token:", installToken.data)
             console.log("\n")
 
-            // uncomment this block when using scopes 'workspace' or 'workspace:read' to access the workspace the app was installed on
+            // uncomment this block when using scopes 'workspace' or 'workspace:read' to list all the sources on the app
             // Enable with segment apps that have destination/xyz cant access this API
-            // workspaceGet(installToken.data.access_token, installToken.data.workspace_names[0])
-            //     .then(function (workspace) {
-            //         console.log("workspace:", workspace)
+            // sourceList(installToken.data.access_token, installToken.data.workspace_names[0])
+            //     .then(function (sources) {
+            //         console.log("sources:", sources)
             //         console.log("\n")
-            //         res.send(workspace)
+            //         res.send(sources)
             //     })
             //     .catch(function (err) {
-            //         console.log("WORKSPACE GET ERROR:", err.body)
+            //         console.log("SOURCE LIST ERROR:", err.body)
             //         res.send(err)
             //     })
 
@@ -109,31 +162,37 @@ app.get('/auth/segment/callback', function (req, res) {
                     console.log("token:", token)
                     console.log("\n")
 
-                    // uncomment this block when using scopes 'workspace' or 'workspace:read' to get a list of all sources on the workspace
-                    // Enable with segment apps that have destination/xyz cant access this API
-                    // sourceList(token.access_token, installToken.data.workspace_names[0])
-                    //     .then(function (sources) {
-                    //         console.log("sources:", sources)
-                    //         console.log("\n")
-                    //     })
-                    //     .catch(function (err) {
-                    //         console.log("CANNOT LIST SOURCES as expected with destination/google-anyalytics scope:", err)
-                    //         res.send(err)
-                    //     })
-
-                    // Use the refreshed token again to GET the destination your app was installed on
-                    // this destination may: 
-                    // - not exist in which case you would want to use the CREATE API to create it (for this demo if you get a not found error make sure you create a destination using the Segment Web UI)
-                    // - may already exist in which case you may want to update it or perhaps delete it and re-create it
-                    destinationGet(token.access_token, installToken.data.source_names[0])
-                        .then(function (destination) {
-                            console.log("destination:", destination)
-                            console.log("\n")
-                        })
-                        .catch(function (err) {
-                            console.log("DESTINATION GET ERROR:", err)
-                            res.send(err)
-                        })
+                    // Use the refreshed token again to CREATE the destination on the source you your app was given access to
+                    // - Here we first try to create the destination
+                    // - If it already exists, then we update the apiKey and set it to enabled
+                    if (installToken.data.source_names) {
+                        // create the destination
+                        destinationCreate(token.access_token, installToken.data.workspace_names[0], installToken.data.source_names[0])
+                            .then(function (destination) {
+                                console.log("created destination:\n", destination)
+                                console.log("\n")
+                                res.send(destination)
+                            })
+                            .catch(function (err) {
+                                // if it exists try to update the current one
+                                console.log("Destination create error. This is expected if destination exists.\nIn this case we update it with your apiKey and set it to enabled\n")
+                                if (err.body.error.includes("destination already exists")) {
+                                    destinationUpdate(token.access_token, installToken.data.workspace_names[0], installToken.data.source_names[0])
+                                        .then(function (destination) {
+                                            console.log("updated already existing destination:\n", destination)
+                                            console.log("\n")
+                                            res.send(destination)
+                                        })
+                                        .catch(function (err) {
+                                            console.log("DESTINATION UPDATE ERROR:", err)
+                                            res.send(err)
+                                        })
+                                }
+                            })
+                    } else {
+                        console.log("no source present so cant get destination.\nPerhaps you are trying to use an app with workspace scope rather than destination/xyz scope.\nFor workspace apps, you can list all the sources on a workspace to read the sourceName")
+                        res.send("no source present so cant get destination.\nPerhaps you are trying to use an app with workspace scope rather than destination/xyz scope.\nFor workspace apps, you can list all the sources on a workspace to read the sourceName")
+                    }
                 })
                 .catch(function (err) {
                     console.log("INSTALL TOKEN REFRESH ERROR:", err)
@@ -146,6 +205,6 @@ app.get('/auth/segment/callback', function (req, res) {
 })
 
 app.listen(port, () => console.log(`Partner app listening on port ${port}!\n`))
-console.log(`1. Make sure you have created the Segment App\n2. Set the CLIENT_ID and CLIENT_SECRET in .env\n3. Set up the segment account with a source and destination\nSee readme if you have any questions\n`)
+console.log(`1. Make sure you have created the Segment App\n2. Set the CLIENT_ID and CLIENT_SECRET in .env\nSee readme if you have any questions\n`)
 console.log(`Now for the demo navigate your browser to http://localhost:8888/auth/segment\n`)
-console.log(`If everything works, you will be redirected to Segment for consent and then in the console you will see the access_token and the destination you created returned\n`)
+console.log(`If everything works, you will be redirected to Segment for consent and then in the console you will see the access_token and the destination you created/updated returned\n`)
