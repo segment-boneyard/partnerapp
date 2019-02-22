@@ -122,7 +122,7 @@ $ open http://localhost:8888/auth/segment
 
 ### Install Token
 
-At the end of a successful flow you will get an "Install Token". If you passed in the scope as `destination/clearbrain` the user will be prompted to select a source to install your Enable With Segment App on and it will be returned to you.
+At the end of a successful flow you will get an "Install Token". If you passed in the scope as `destination/clearbrain` the user will be prompted to select a source to install your Enable With Segment App on and it will be returned to you as well
 
 ```js
 {
@@ -139,7 +139,7 @@ At the end of a successful flow you will get an "Install Token". If you passed i
 
 You can then perform API operations on behalf a user as the install.
 
-With `destination/xyz` scope you can only change the destination specified (`xyz`) on the user selected source. This is the recommended scope for apps trying to control just one destination for a user (Enable With Segment functionality). These apps can only access the Destinations API. Detailed reference is here: https://reference.segmentapis.com/ > Destinations
+With `destination/clearbrain` scope you can only change the destination specified (`clearbrain` in this case) on the user selected source. This is the recommended scope for apps trying to control just one destination for a user (Enable With Segment functionality). These apps can only access the Destinations API. Detailed reference is here: https://reference.segmentapis.com/ > Destinations
 
 You can GET a destination if it exists as shown below and Create, Update or Delete it too.
 
@@ -216,23 +216,28 @@ $ curl \
 }
 ```
 
-If you created the app with any of these scopes, you can uncomment the line in index.js to see an example of how you could list all sources on the users workspace
+If you created the app with any of these scopes, you can uncomment the lines around sourceList in index.js to see an example of how you could list all sources on the users workspace
 
 ## FAQ and Troubleshooting
 
 ### Do I need a segment account? What username/password for creating a personal access token?
 
-Yes you need a regular segment account and the username/password to get the access-token are your login credentials for this segment account. Your app will be owned by a workspace in this segment account but as long as you set `public: true` when you create the app, other workspaces (which are globally unique among segment users) can instal it.
+Yes you need a regular segment account and the username/password to get the access-token are your login credentials for this segment account. Your app will be owned by a workspace in this segment account but as long as you set `public: true` when you create the app, other workspaces (which are globally unique among segment users) can install it.
 
 ### What should the exact destination slug/word be?
 
-There are references above for `destination/xyz` what should the `xyz` be? Well, that is the destination that you would like to manage for the user. To see the exact slug we are expecting for your destination:
-* If you just submitted a destination in partner portal for approval, you can see the slug on the form while submission, or once submitted in the URL
-* If your destination is already public, look at the Segment Catalog in the webapp or the public one and find destination. That exact slug should appear in the URL. So it would be `clearbrain` for this destination https://segment.com/integrations/clearbrain/
+There are references above for `destination/<slug>` what should the `<slug>` be? Well, that is the destination that you would like to manage for the user. To see the exact slug we are expecting for your destination:
+* If you just submitted a destination in partner portal for approval, you can see the slug on the submission form, or once submitted in the URL
+* If your destination is already public, look at the Segment Catalog and find destination. That exact slug should appear in the URL. So it would be `clearbrain` for this destination https://segment.com/integrations/clearbrain/
 
 ## What should the exact create body be to enable my destination?
 
-All you need is the full path to the apiKey (which includes the users workspace and source, see below), the actual apiKey and pass `enabled: true`.
+The create body will have three fields:
+* full path to the apiKey (which includes the users workspace and source, see below)
+* the actual apiKey provisioned for the user in your system. It's in the "value" field
+* `enabled: true`.
+
+The body will be in this form
 
 ```shell
 curl -X POST \
@@ -250,7 +255,7 @@ curl -X POST \
             ],
             "enabled": true
     }
-  https://platform.segmentapis.com/v1beta/workspaces/e2e-test-local/sources/js/destinations \
+  https://platform.segmentapis.com/v1beta/workspaces/userworkspace/sources/js/destinations \
 }'
 ```
 
@@ -262,35 +267,38 @@ If you created the app with `destination/<slug>` scope you can only access that 
 
 GET the destination settings using our catalog API first. This will show all the fields the destination supports. Then substitute the field values for the ones you need to specify.
 
-Then change this to a CREATE request and substitute the appropriate field values. Check out https://reference.segmentapis.com/ > Destination > CREATE request
+Using this body craft a CREATE request and substitute the appropriate field values. Check out https://reference.segmentapis.com/ > Destination > CREATE request for an example
 
 ### What type of OAuth grant do you support?
 
 We support the authorization code grant type. That means you will have to exchange the auth_code returned during the install flow to get the actual access token. https://www.oauth.com/oauth2-servers/access-tokens/authorization-code-request/
 
+The library you use in your programming language should do this automatically for you
+
 ### What scopes do you support?
 
-We support `destination/xyz`,  `workspace` and `workspace:read`. You set this in the app creation and when you start the install flow. You have to use the same exact scope in both places.
+We support `destination/<slug>`,  `workspace` and `workspace:read`. You set this in the app creation and when you start the install flow. You have to use the same exact scope in both places otherwise you will get an invalid scope error when you start the error.
 
 ### What is the fastest way to get started? Do I have to learn OAuth to make an app?
 
-Run the starter app (https://github.com/segmentio/partnerapp) we have written so you can see all the steps involved in setting up your app, installing it and then accessing resources.
+Run the partner app (you are looking at it!) so you can see all the steps involved in setting up your app, installing it and then accessing resources.
 
 You don’t need to learn OAuth! If you use the standard oauth implementation in your programming language, like we do in the partner app, all this complexity should be hidden away from you.
 
 ### During OAuth code exchange I am getting missing a required parameter
 
-You probably dont have redirect_uri matching what you said in the App Create Request
+You probably dont have redirect_uri matching what you set in the App Create Request
 
 ### How many redirect_uris can I have? Can I add more after the app is created?
 
-You can have five redirect_uris on app creation. For now, editing the app info directly is not supported. Please write in to have any of your redirect_uris or other info changed.
+You can have five redirect_uris on app creation. For now, editing the app info directly is not supported. Please emaul us for now if you want any of your redirect_uris or other info changed.
 
 In the future we will have UIs and APIs so you can update this information on your own.
 
 ### I am getting malformed token when I try to access the API. What is wrong?
-- Your token could have expired. They expire every hour. You then have to hit the refresh endpoint to get a new access_token. Make sure you pass in the correct install_name and client_id and client_secret in that request
-- You are trying to take an action you don’t have permission for. So write to a resource when you only have `workspace:read` permission. If you need write access then create a new app with `workspace` permission and then re-install it.
+
+* Your token could have expired. They expire every hour. You then have to hit the refresh endpoint to get a new access_token. Make sure you pass in the correct install_name and client_id and client_secret in that request
+* You are trying to take an action you don’t have permission for. So write to a resource when you only have `workspace:read` permission. If you need write access then create a new app with `workspace` permission and then re-install it.
 
 ### Will you send CSRF state back when you redirect?
 
