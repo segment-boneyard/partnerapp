@@ -57,19 +57,19 @@ $ DEST=clearbrain
 
 $ curl \
   -H "Authorization: Bearer $TOKEN" \
-  -d `{
-    "app": {
-      "display_name": "myapp",
-      "description": "My cool read-only app",
-      "client_uri": "https://example.com",
-      "scope": "'"destination/$DEST"'",
-      "public": true,
-      "logo_uri": "https://example.com/logo.gif",
-      "tos_uri": "https://example.com/tos",
-      "policy_uri": "https://example.com/privacy",
-      "redirect_uris": ["http://localhost:8888/auth/segment/callback"]
+  -d "{
+    'app': {
+      'display_name': 'myapp',
+      'description': 'My cool read-only app',
+      'client_uri': 'https://example.com',
+      'scope': 'destination/$DEST',
+      'public': true,
+      'logo_uri': 'https://example.com/logo.gif',
+      'tos_uri': 'https://example.com/tos',
+      'policy_uri': 'https://example.com/privacy',
+      'redirect_uris': ['http://localhost:8888/auth/segment/callback']
     }
-  }` \
+  }" \
   https://platform.segmentapis.com/v1beta/workspaces/$WORKSPACE/apps
 ```
 
@@ -141,32 +141,31 @@ You can then perform API operations on behalf a user as the install.
 
 With `destination/clearbrain` scope you can only change the destination specified (`clearbrain` in this case) on the user selected source. This is the recommended scope for apps trying to control just one destination for a user (Enable With Segment functionality). These apps can only access the Destinations API. Detailed reference is here: https://reference.segmentapis.com/ > Destinations
 
-You can GET a destination if it exists as shown below and Create, Update or Delete it too.
+You can GET a destination if it exists (and you have access to the user workspace and source) as shown below and Create, Update or Delete it too.
 
 ```shell
 $ INSTALL_TOKEN=YL8a0w-Boz1EgZgmD2ELZvsxakjqSMwO8xe7tV-ToSk.nKaLX2QHocqalHR3O4BdoYdcopk3hjW4izYHMG14cxQ
 $ curl \
   -H "Authorization: Bearer $INSTALL_TOKEN" \
-  https://platform.segmentapis.build/v1beta/workspaces/business/sources/javascripts/destinations/google-analytics \
+  https://platform.segmentapis.com/v1beta/workspaces/business/sources/js/destinations/clearbrain \
 ```
 
 ```json
 {
-    "name": "workspaces/business/sources/js/destinations/google-analytics",
+    "name": "workspaces/business/sources/js/destinations/clearbrain",
     "parent": "workspaces/business/sources/js",
-    "display_name": "Google Analytics",
-    "enabled": false,
-    "connection_mode": "CLOUD",
+    "display_name": "ClearBrain",
+    "enabled": true,
+    "connection_mode": "UNSPECIFIED",
     "config": [
         {
-            "name": "workspaces/business/sources/js/destinations/google-analytics/config/classic",
-            "display_name": "Use Classic Analytics on Your Site",
-            "value": false,
-            "type": "boolean"
-            ...
+            "name": "workspaces/business/sources/js/destinations/clearbrain/config/apiKey",
+            "display_name": "API Key",
+            "value": "abcd1234",
+            "type": "string"
         }
-        ...
-    ]
+    ],
+    ...
 }
 ```
 
@@ -216,7 +215,7 @@ $ curl \
 }
 ```
 
-If you created the app with any of these scopes, you can uncomment the lines around sourceList in index.js to see an example of how you could list all sources on the users workspace
+If you created the app with any of these scopes, and then updated the scope in index.js at the top to match it, you can uncomment the lines around sourceList in index.js to see an example of how you could list all sources on the users workspace
 
 ## FAQ and Troubleshooting
 
@@ -259,11 +258,11 @@ curl -X POST \
 }'
 ```
 
-## Why can't I list all destinations on the source
+### Why can't I list all destinations on the source
 
 If you created the app with `destination/<slug>` scope you can only access that one destination on the source. So listing all destinations is not allowed for this scope.
 
-## How do I create or update a destination that requires more configuration than just a API Key?
+### How do I create or update a destination that requires more configuration than just a API Key?
 
 GET the destination settings using our catalog API first. This will show all the fields the destination supports. Then substitute the field values for the ones you need to specify.
 

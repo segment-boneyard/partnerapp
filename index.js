@@ -17,7 +17,6 @@ const idUri = 'https://id.segmentapis.com'
 const dest = 'clearbrain'
 // change this to the API key provisioned for your customer in your system
 const destAPIKey = 'abcd1234'
-// you can use workspace or workspace:read scope instead of destination/xyz for creating an app that has access to all of the user's resources
 // destination/xyz means that the app only has access to that single destination on the user selected source
 const scope = `destination/${dest}`
 
@@ -59,8 +58,9 @@ async function reqBearer(token, method, url, body) {
     })
 }
 
-// change the scopes in segmentAuth.scopes to [`workspace`] or [`workspace:read`] to access these and other api endpoints
-// these two apis, sourceList, workspaceGet, dont work with destination/xyz scope
+// advanced use case
+// change the scopes in segmentAuth.scopes to [`workspace`] or [`workspace:read`] and create a new app with these scopes using the REST API
+// to access sourceList and other segment APIs
 async function sourceList(installToken, workspaceName) {
     return reqBearer(installToken, "GET", `${apiUri}/v1beta/${workspaceName}/sources`)
 }
@@ -70,11 +70,13 @@ async function tokenGet(clientId, clientSecret, installName) {
     return req("GET", `${apiUri}/v1beta/${installName}/token`, undefined, undefined, clientId, clientSecret)
 }
 async function destinationGet(installToken, sourceName) {
-    // note: even though the scope is destination/xyz the APIs use destinations/xyz (plural)
     return reqBearer(installToken, "GET", `${apiUri}/v1beta/${sourceName}/destinations/${dest}`)
 }
 
-async function destinationCreate(installToken, workspaceName, sourceName) {
+async function destinationCreate(installToken, sourceName) {
+    if (!sourceName) {
+        return "no source specified to create destination on"
+    }
     // note: 
     // 1. even though the scope is destination/xyz the APIs use destinations/xyz (plural)
     // 2. The sourcename is fully qualified so it would be something like: workspaces/business/sources/js/destinations/clearbrain
@@ -87,7 +89,6 @@ async function destinationCreate(installToken, workspaceName, sourceName) {
                 "config": [
                     {
                         "name": `${sourceName}/destinations/${dest}/config/apiKey`,
-                        "display_name": "API Key",
                         "value": `${destAPIKey}`
                     }
                 ],
@@ -97,7 +98,10 @@ async function destinationCreate(installToken, workspaceName, sourceName) {
     return reqBearer(installToken, "POST", `${apiUri}/v1beta/${sourceName}/destinations`, body)
 }
 
-async function destinationUpdate(installToken, workspaceName, sourceName) {
+async function destinationUpdate(installToken, sourceName) {
+    if (!sourceName) {
+        return "no source specified to update destination on"
+    }
     // note: 
     // 1. look at the notes in destinationCreate
     // 2. the update_mask field is required during updates and tells the API which fields you are going to update. 
@@ -109,7 +113,6 @@ async function destinationUpdate(installToken, workspaceName, sourceName) {
                 "config": [
                     {
                         "name": `${sourceName}/destinations/${dest}/config/apiKey`,
-                        "display_name": "API Key",
                         "value": `${destAPIKey}`
                     }
                 ],
@@ -155,48 +158,59 @@ app.get('/auth/segment/callback', function (req, res) {
             //         res.send(err)
             //     })
 
-            // Use your client ID and secret to get a new install token
-            // Install tokens expire after 1 hour so you will have to do this every hour
-            tokenGet(clientId, clientSecret, installToken.data.install_name)
-                .then(function (token) {
-                    console.log("token:", token)
-                    console.log("\n")
+            // Use the refreshed token again to CREATE the destination on the source you your app was given access to
+            // - Here we first try to create the destination
+            // - If it already exists, then we update the apiKey and set it to enabled
+            if (installToken.data.source_names) {
+                // create the destination
+                destinationCreate(installToken.data.access_token, installToken.data.source_names[0])
+                    .then(function (destination) {
+                        console.log("created destination:\n", destination)
+                        console.log("\n")
+                        res.send(destination)
+                    })
+                    .catch(function (err) {
+                        // if it exists try to update the current one
+                        console.log("Destination create error. This is expected if destination exists.\nIn this case we update it with your apiKey and set it to enabled\n")
+                        if (err.body.error.includes("destination already exists")) {
+                            destinationUpdate(installToken.data.access_token, installToken.data.source_names[0])
+                                .then(function (destination) {
+                                    console.log("updated already existing destination:\n", destination)
+                                    console.log("\n")
+                                    res.send(destination)
+                                })
+                                .catch(function (err) {
+                                    console.log("DESTINATION UPDATE ERROR:", err)
+                                    res.send(err)
+                                })
+                        }
+                    })
+            } else {
+                console.log("no source present so cant get destination.\nPerhaps you are trying to use an app with workspace scope rather than destination/xyz scope.\nFor workspace apps, you can list all the sources on a workspace to read the sourceName")
+                res.send("no source present so cant get destination.\nPerhaps you are trying to use an app with workspace scope rather than destination/xyz scope.\nFor workspace apps, you can list all the sources on a workspace to read the sourceName")
+            }
 
-                    // Use the refreshed token again to CREATE the destination on the source you your app was given access to
-                    // - Here we first try to create the destination
-                    // - If it already exists, then we update the apiKey and set it to enabled
-                    if (installToken.data.source_names) {
-                        // create the destination
-                        destinationCreate(token.access_token, installToken.data.workspace_names[0], installToken.data.source_names[0])
-                            .then(function (destination) {
-                                console.log("created destination:\n", destination)
-                                console.log("\n")
-                                res.send(destination)
-                            })
-                            .catch(function (err) {
-                                // if it exists try to update the current one
-                                console.log("Destination create error. This is expected if destination exists.\nIn this case we update it with your apiKey and set it to enabled\n")
-                                if (err.body.error.includes("destination already exists")) {
-                                    destinationUpdate(token.access_token, installToken.data.workspace_names[0], installToken.data.source_names[0])
-                                        .then(function (destination) {
-                                            console.log("updated already existing destination:\n", destination)
-                                            console.log("\n")
-                                            res.send(destination)
-                                        })
-                                        .catch(function (err) {
-                                            console.log("DESTINATION UPDATE ERROR:", err)
-                                            res.send(err)
-                                        })
-                                }
-                            })
-                    } else {
-                        console.log("no source present so cant get destination.\nPerhaps you are trying to use an app with workspace scope rather than destination/xyz scope.\nFor workspace apps, you can list all the sources on a workspace to read the sourceName")
-                        res.send("no source present so cant get destination.\nPerhaps you are trying to use an app with workspace scope rather than destination/xyz scope.\nFor workspace apps, you can list all the sources on a workspace to read the sourceName")
-                    }
-                })
-                .catch(function (err) {
-                    console.log("INSTALL TOKEN REFRESH ERROR:", err)
-                })
+            // Use your client ID and secret to get a new install token
+            // Install tokens expire after 1 hour so you will have to do this if you want to regain access to the users resources after 1hr
+            // once you refresh the token the old token (installToken in this case) no longer works
+            // tokenGet(clientId, clientSecret, installToken.data.install_name)
+            //     .then(function (token) {
+            //         console.log("token:", token)
+            //         console.log("\n")
+            //         destinationGet(token.access_token, installToken.data.source_names[0])
+            //             .then(function (destination) {
+            //                 console.log("getting destination:\n", destination)
+            //                 console.log("\n")
+            //             })
+            //             .catch(function (err) {
+            //                 console.log("DESTINATION GET ERROR:", err)
+            //                 res.send(err)
+            //             })
+            //     })
+            //     .catch(function (err) {
+            //             console.log("INSTALL TOKEN REFRESH ERROR:", err)
+            //             res.send(err)
+            //     })
         })
         .catch(function (err) {
             console.log("INSTALL TOKEN EXCHANGE ERROR:", err)
@@ -207,4 +221,4 @@ app.get('/auth/segment/callback', function (req, res) {
 app.listen(port, () => console.log(`Partner app listening on port ${port}!\n`))
 console.log(`1. Make sure you have created the Segment App\n2. Set the CLIENT_ID and CLIENT_SECRET in .env\nSee readme if you have any questions\n`)
 console.log(`Now for the demo navigate your browser to http://localhost:8888/auth/segment\n`)
-console.log(`If everything works, you will be redirected to Segment for consent and then in the console you will see the access_token and the destination you created/updated returned\n`)
+console.log(`If everything works, you will be redirected to Segment for consent and then in the console you will see the access_token and the destination you changed\n`)
