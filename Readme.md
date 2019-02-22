@@ -87,7 +87,7 @@ $ curl \
  "logo_uri": "https://example.com/logo.gif",
  "tos_uri": "https://example.com/tos",
  "policy_uri": "https://example.com/privacy",
- "scope": "destination/google-analytics",
+ "scope": "destination/clearbrain",
  "description": "My cool read-only app",
  "display_name": "myapp"
 }
