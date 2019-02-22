@@ -239,7 +239,7 @@ There are references above for `destination/<slug>` what should the `<slug>` be?
 * If you just submitted a destination in partner portal for approval, you can see the slug on the submission form, or once submitted in the URL
 * If your destination is already public, look at the Segment Catalog and find destination. That exact slug should appear in the URL. So it would be `clearbrain` for this destination https://segment.com/integrations/clearbrain/
 
-## What should the exact create body be to enable my destination?
+### What should the exact create body be to enable my destination?
 
 The create body will have three fields:
 * full path to the apiKey (which includes the users workspace and source, see below)
@@ -325,4 +325,6 @@ When an install happened you should have received a segment `workspace` and  `in
 
 ### OK I managed to create an App. How do I use your APIs?
 
-Here are docs https://segment.com/docs/config-api/ and some detailed reference https://reference.segmentapis.com/#51d965d3-4a67-4542-ae2c-eb1fdddc3df6.
+Here are docs https://segment.com/docs/config-api/ 
+
+And a postman API reference collection that you can run as-is https://reference.segmentapis.com/#51d965d3-4a67-4542-ae2c-eb1fdddc3df6.
