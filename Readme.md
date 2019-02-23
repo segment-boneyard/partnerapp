@@ -1,6 +1,6 @@
 # Segment Partner App
 
-A Node.js app that demonstrates how to build a Segment OAuth App. Installing this app and get a working demo going is the fastest way to understand Segment OAuth and get started with building your app.
+A Node.js app that demonstrates how to build a Segment OAuth App. Installing this app and getting a working demo going is the fastest way to understand Segment OAuth and get started with building your app.
 
 This app manages a specific destination on a source that the user consents to. To do that, it will need the _scope_ `destination/<slug>` (for example: `destination/clearbrain`).
 
@@ -102,6 +102,8 @@ $ echo CLIENT_SECRET=YvpqemW8TI_~ >> .env
 
 ### OAuth Flow
 
+Clone this git repo 
+
 Change these three vars at the top in index.js
 ```shell
 // change this to the dest you are trying to manage for the user
@@ -112,7 +114,15 @@ const destAPIKey = 'abcd1234'
 const scope = `destination/${dest}`
 ```
 
-Install node.js if you don't have it already. And then initiate the OAuth flow
+Install node.js if you don't have it already. On the mac you can do it by:
+
+```shell
+brew install node
+cd partnerapp <or wherever you cloned this repo>
+npm install
+```
+
+And then initiate the OAuth flow
 
 ```shell
 $ node index.js
