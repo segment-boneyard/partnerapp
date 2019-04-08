@@ -70,13 +70,12 @@ $ curl \
       'redirect_uris': ['http://localhost:8888/auth/segment/callback']
     }
   }" \
-  https://platform.segmentapis.com/v1beta/workspaces/$WORKSPACE/apps
+  https://platform.segmentapis.com/v1beta/apps
 ```
 
 ```json
 {
- "name": "workspaces/userworkspace/apps/12",
- "parent": "workspaces/userworkspace",
+ "name": "apps/12",
  "client_id": "d1ce4e85-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
  "client_secret": "YvpqeXXXXXXX",
  "public": true,
@@ -102,7 +101,7 @@ $ echo CLIENT_SECRET=YvpqeXXXXXXX >> .env
 
 ### OAuth Flow
 
-Clone this git repo 
+Clone this git repo
 
 Change these three vars at the top in index.js
 ```shell
@@ -217,7 +216,7 @@ If you created an App with a more permissive scope you have access to more APIs:
 
 Full list of APIs are here: https://segment.com/docs/config-api/
 
-Here is an example of how you would get a users workspace if you had any of the above scopes 
+Here is an example of how you would get a users workspace if you had any of the above scopes
 
 ```shell
 $ INSTALL_TOKEN=YL8a0w-Boz1EgZgmD2ELZvsxakjqSMwO8xe7tV-XXXX.XXXXXXXXXXXXXX
@@ -335,7 +334,7 @@ When an install happened you should have received a segment `workspace` and  `in
 
 ### OK I managed to create an App. How do I use your APIs?
 
-Here are docs https://segment.com/docs/config-api/ 
+Here are docs https://segment.com/docs/config-api/
 
 And a postman API reference collection that you can run as-is https://reference.segmentapis.com/#51d965d3-4a67-4542-ae2c-eb1fdddc3df6.
 
