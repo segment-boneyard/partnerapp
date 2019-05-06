@@ -59,15 +59,19 @@ $ curl \
   -H "Authorization: Bearer $TOKEN" \
   -d "{
     'app': {
-      'display_name': 'myapp',
-      'description': 'My cool read-only app',
       'client_uri': 'https://example.com',
-      'scope': 'destination/$DEST',
-      'public': true,
+      'description': 'My cool read-only app',
+      'display_name': 'myapp',
+      'documentation_uri': 'https://example.com/docs',
+      'logo_mark_uri': 'https://example.com/logo.gif',
       'logo_uri': 'https://example.com/logo.gif',
-      'tos_uri': 'https://example.com/tos',
       'policy_uri': 'https://example.com/privacy',
-      'redirect_uris': ['http://localhost:8888/auth/segment/callback']
+      'public': true,
+      'redirect_uris': [
+          'http://localhost:8888/auth/segment/callback'
+      ],
+      'scope': 'destination/$DEST',
+      'tos_uri': 'https://example.com/tos'
     }
   }" \
   https://platform.segmentapis.com/v1beta/apps
@@ -87,8 +91,26 @@ $ curl \
  "tos_uri": "https://example.com/tos",
  "policy_uri": "https://example.com/privacy",
  "scope": "destination/clearbrain",
- "description": "My cool read-only app",
- "display_name": "myapp"
+ "description": "My Enable with Segment app",
+ "display_name": "myapp",
+ "primary_category": "",
+ "categories": [],
+ "screenshots": [],
+ "logo_mark_uri": "https://example.com/logo.gif",
+ "documentation_uri": "https://example.com/docs",
+ "technical_contact": {
+  "name": "",
+  "email": "",
+  "role": ""
+ },
+ "test_account": {
+  "email": "",
+  "password": "",
+  "notes": ""
+ },
+ "catalog_with_segment_description": "",
+ "catalog_get_more_with_segment": "",
+ "key_features": []
 }
 ```
 
