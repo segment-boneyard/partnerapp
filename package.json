@@ -4,5 +4,26 @@
     "dotenv": "^6.2.0",
     "express": "^4.16.4",
     "request": "^2.88.0"
-  }
+  },
+  "devDependencies": {
+    "jest": "^24.8.0",
+    "nock": "^10.0.6"
+  },
+  "name": "partnerapp",
+  "description": "A Node.js app that demonstrates how a partner integrates with the Segment platform.",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/segmentio/partnerapp.git"
+  },
+  "author": "Noah Zoschke <noah@segment.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/segmentio/partnerapp/issues"
+  },
+  "homepage": "https://github.com/segmentio/partnerapp#readme"
 }
