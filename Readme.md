@@ -1,131 +1,155 @@
 # Segment Partner App
 
-A Node.js app that demonstrates how to build a Segment OAuth App. Installing this app and getting a working demo going is the fastest way to understand Segment OAuth and get started with building your app.
+This is a Node.js app that demonstrates how a partner integrates with the Segment platform. It covers multiple strategies for receiving event data from Segment:
 
-This app manages a specific destination on a source that the user consents to. To do that, it will need the _scope_ `destination/<slug>` (for example: `destination/clearbrain`).
+- Custom Code Subscription -- Segment runs JavaScript you write to POST event data to your public API
+- Webhook Subscription -- Segment POSTs event data to an private API endpoint you build
+- Lambda Subscriptions -- Segment invokes a Lambda function you write in your AWS account with event data
 
-### Create Segment Account and PAT
+It also covers a strategy for your users to configure your destination on Segment:
 
-To use the API, you need a Segment username, password, workspace and access token.
+- Enable with Segment -- Your users are directed to "install" your app on Segment via OAuth flows
 
-If you don't have a Segment user, [sign up](https://app.segment.com/signup).
+## Which Subscription Should I Build?
 
-Then for this demo create a source on Segment first. Login to Segment > Click Sources in the left nav bar > Add source > Javascript > Connect
+A Custom Code Subscription is designed to be the fastest to get working. You can copy the [custom code reference implementation](custom/index.js), add your existing API endpoint, tweak the logic to translate Segment event data to your API format, and paste the code into the Segment Dev Center. Segment will run the custom JavaScript for you.
 
-Then create a personal access token (PAT) using the API. You can find the workspace when you are logged into the Segment Web UI in the URL. If the URL was https://app.segment.com/business/overview, the workspace would be business.
+If you do not want to write this adapter in JavaScript, you might consider a Lambda Subscription. You can refer to the [custom code reference implementation](custom/index.js), and implement the same interface in any language AWS Lambda supports, and paste the resulting Lambda ARN into the Segment Dev Center. Segment will invoke your Lambda function for you. See the [Segment Lambda docs](https://segment.com/docs/destinations/amazon-lambda/) for more information.
 
-```shell
-$ USER=<email>
-$ PASS=<Segment pass>
-$ WORKSPACE=<Segment workspace>
+If you do not want to write a destination in a serverless fashion, you should build a Webhook Subscription. You can refer to the [webhook reference implementation](webhook/index.js) and implement the same concepts in any language, deploy it to your infrastructure, and paste the resulting HTTPS URL into the Segment Dev Center. Segment will POST data to your API endpoint.
 
-$ curl https://platform.segmentapis.com/v1beta/access-tokens \
-  -u "$USER:$PASS" \
-  -d "{
-    'access_token': {
-      'description': 'partner app',
-      'scopes': 'workspace',
-      'workspace_names': [
-            'workspaces/$WORKSPACE'
+## What is Enable with Segment?
+
+The Enable with Segment flow is designed to easily and security help your customers set up your destination in Segment. You can refer to the [OAuth reference implementation](oauth/index.js) and add the "Enable With Segment" button and OAuth callbacks into your web app, then set the OAuth callback URL in the Segment Dev Center. When your users click the "Enable With Segment" button they will be prompted to "install" your application, and when they approve you will get an API access token that lets you automatically configure your destination in their Segment workspace.
+
+## Quick Start -- Custom Code
+
+1. Register for the [Segment Developer Center](https://app.segment.com/developer)
+2. Create an Segment App
+3. Create a Subscription Component and select "I want to build my endpoint on Segment"
+4. Customize and upload the following snippet
+
+- Set your API endpoint and method
+- Transform data from the Segment Spec into your API format
+
+5. Use the "Send Test Event" and "Test" suite to verify event delivery
+6. Fill out the remaining app and destination metadata and submit your destination
+
+```js
+// Reference code for translating Segment events into a Slack incoming webhook
+const endpoint =
+  "https://hooks.slack.com/services/<REDACTED>/<REDACTED>/<REDACTED>";
+const method = "POST";
+
+const transformEvent = event => {
+  return {
+    text: `${event.email} ${event.event}`,
+    attachments: [
+      {
+        author_name: `UserID: ${event.userId}`,
+        title: `${event.properties.plan} plan`,
+        fields: [
+          {
+            title: "Plan",
+            value: event.properties.plan,
+            short: false
+          },
+          {
+            title: "Account Type",
+            value: event.properties.accountType,
+            short: false
+          }
         ]
-    }
-  }"
+      }
+    ]
+  };
+};
 ```
+
+<details>
+<summary>Example Segment event...</summary>
 
 ```json
 {
- "name": "access-tokens/127",
- "description": "partner app",
- "scopes": "workspace",
- "create_time": "2018-12-19T18:57:39Z",
- "token": "XsRI63dOnUHbtl1RiMqLBvWYO-XXXXXXXXXXXXXXXXXXX",
- "workspace_names": [
-  "workspaces/<userWorkspace>"
- ]
+  "type": "track",
+  "event": "Registered",
+  "userId": "test-user-23js8",
+  "timestamp": "2019-04-08T01:19:38.931Z",
+  "email": "test@example.com",
+  "properties": {
+    "plan": "Pro Annual",
+    "accountType": "Facebook"
+  }
 }
 ```
+</details>
 
-### Create a Enable With Segment App
+See the [Custom Code directory](custom) for full docs and reference implementation.
 
-Note the scope is `destination/<slug>` which is how you specify what destination you want to get access to. During the oauth flow the user will select the source they are giving you access to.
+## Quick Start -- Webhook Subscription
 
-Change the DEST variable with the slug of your destination. In this example it is clearbrain
+## Quick Start -- Lambda Subscription
 
-```shell
-$ TOKEN=<token>
-$ DEST=clearbrain
+## Quick Start -- Enable with Segment
 
-$ curl \
-  -H "Authorization: Bearer $TOKEN" \
-  -d "{
-    'app': {
-      'client_uri': 'https://example.com',
-      'description': 'My cool read-only app',
-      'display_name': 'myapp',
-      'documentation_uri': 'https://example.com/docs',
-      'logo_mark_uri': 'https://example.com/logo.gif',
-      'logo_uri': 'https://example.com/logo.gif',
-      'policy_uri': 'https://example.com/privacy',
-      'public': true,
-      'redirect_uris': [
-          'http://localhost:8888/auth/segment/callback'
-      ],
-      'scope': 'destination/$DEST',
-      'tos_uri': 'https://example.com/tos'
-    }
-  }" \
-  https://platform.segmentapis.com/v1beta/apps
+1. Register for the [Segment Developer Center](https://app.segment.com/developer)
+2. Create an Segment App
+3. Browse to the App OAuth Settings
+
+- copy the client ID, secret and scope
+- set redirect URLs for development (e.g. `http://localhost:8888/auth/segment/callback`) and production (e.g. `https://api.example.com/auth/segment/callback`)
+
+4. Add the "Enable with Segment" button to your user's web management console
+5. Initiate the OAuth flow
+6. On callback, use the OAuth token and Segment Config API to create or update your destination
+
+```js
+// Reference code for implementing Enable with Segment via OAuth
+var segmentAuth = new ClientOAuth2({
+  clientId: "e5ec2f6e-9774-4bcd-ab5f-c663d1da0683",
+  clientSecret: "<REDACTED>",
+  accessTokenUri: `https://id.segmentapis.build/oauth2/token`,
+  authorizationUri: `https://id.segmentapis.build/oauth2/auth`,
+  redirectUri: `http://localhost:8888/auth/segment/callback`,
+  scopes: [scope],
+  state: crypto.randomBytes(20).toString("hex")
+});
+
+app.get("/auth/segment/callback", function(req, res) {
+  segmentAuth.code.getToken(req.originalUrl).then(function(installToken) {
+    destinationCreate(
+      installToken.data.access_token,
+      installToken.data.source_names[0]
+    )
+      .then(function(destination) {
+        res.send(destination);
+      })
+      .catch(function(err) {
+        if (err.body.error.includes("destination already exists")) {
+          destinationUpdate(
+            installToken.data.access_token,
+            installToken.data.source_names[0]
+          )
+            .then(function(destination) {
+              res.send(destination);
+            })
+            .catch(function(err) {
+              res.send(err);
+            });
+        }
+      });
+  });
+});
 ```
 
-```json
-{
- "name": "apps/12",
- "client_id": "d1ce4e85-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
- "client_secret": "YvpqeXXXXXXX",
- "public": true,
- "redirect_uris": [
-  "http://localhost:8888/auth/segment/callback"
- ],
- "client_uri": "https://example.com",
- "logo_uri": "https://example.com/logo.gif",
- "tos_uri": "https://example.com/tos",
- "policy_uri": "https://example.com/privacy",
- "scope": "destination/clearbrain",
- "description": "My Enable with Segment app",
- "display_name": "myapp",
- "primary_category": "",
- "categories": [],
- "screenshots": [],
- "logo_mark_uri": "https://example.com/logo.gif",
- "documentation_uri": "https://example.com/docs",
- "technical_contact": {
-  "name": "",
-  "email": "",
-  "role": ""
- },
- "test_account": {
-  "email": "",
-  "password": "",
-  "notes": ""
- },
- "catalog_with_segment_description": "",
- "catalog_get_more_with_segment": "",
- "key_features": []
-}
-```
-
-_IMPORTANT!_ Save the client_secret as you can't see it again.
-
-```
-$ echo CLIENT_ID=d1ce4e85-XXXX-XXXX-XXXX-XXXXXXXXXXXX > .env
-$ echo CLIENT_SECRET=YvpqeXXXXXXX >> .env
-```
+See the [Enable with Segment directory](enable) for full docs and reference implementation.
 
 ### OAuth Flow
 
 Clone this git repo
 
 Change these three vars at the top in index.js
+
 ```shell
 // change this to the dest you are trying to manage for the user
 const dest = 'clearbrain'
@@ -152,7 +176,7 @@ Example app listening on port 8888!
 $ open http://localhost:8888/auth/segment
 ```
 
- If you use a standard oauth library in your programming language all of this should be done for you as shown in this demo. These steps are just for illustration.
+If you use a standard oauth library in your programming language all of this should be done for you as shown in this demo. These steps are just for illustration.
 
 1. When the user wants to authenticate, you redirect user to `https://id.segmentapis.com/oauth2/auth?response_type=code&scope=workspace:read&client_id=...`. Note that we only accept response_type=code here. That means you’ll get back an auth_code from us that your library will then exchange for an install token in Step 5 below.
 2. If user is logged out, Segment redirects to `https://app.segment.com/login`
@@ -221,18 +245,20 @@ $ curl \
 
 ```json
 {
- "access_token": "4d9ee1b5-b752-XXXX-XXXX-XXXXXXXXXX",
- "token_type": "bearer",
- "expires_in": 3600,
- "scope": "workspace",
- "app_name": "apps/myapp",
- "install_name": "install/10",
- "workspace_names": ["workspaces/userworkspace"]
+  "access_token": "4d9ee1b5-b752-XXXX-XXXX-XXXXXXXXXX",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "scope": "workspace",
+  "app_name": "apps/myapp",
+  "install_name": "install/10",
+  "workspace_names": ["workspaces/userworkspace"]
 }
 ```
+
 ## Advanced use cases
 
 If you created an App with a more permissive scope you have access to more APIs:
+
 - With `workspace` scope you can change all resources
 - With `workspace:read` you can read all resources, but not change them
 
@@ -267,15 +293,17 @@ Yes you need a regular segment account and the username/password to get the acce
 ### What should the exact destination slug/word be?
 
 There are references above for `destination/<slug>` what should the `<slug>` be? Well, that is the destination that you would like to manage for the user. To see the exact slug we are expecting for your destination:
-* If you just submitted a destination in partner portal for approval, you can see the slug on the submission form, or once submitted in the URL
-* If your destination is already public, look at the Segment Catalog and find destination. That exact slug should appear in the URL. So it would be `clearbrain` for this destination https://segment.com/integrations/clearbrain/
+
+- If you just submitted a destination in partner portal for approval, you can see the slug on the submission form, or once submitted in the URL
+- If your destination is already public, look at the Segment Catalog and find destination. That exact slug should appear in the URL. So it would be `clearbrain` for this destination https://segment.com/integrations/clearbrain/
 
 ### What should the exact create body be to enable my destination?
 
 The create body will have three fields:
-* full path to the apiKey (which includes the users workspace and source, see below)
-* the actual apiKey provisioned for the user in your system. It's in the "value" field
-* `enabled: true`.
+
+- full path to the apiKey (which includes the users workspace and source, see below)
+- the actual apiKey provisioned for the user in your system. It's in the "value" field
+- `enabled: true`.
 
 The body will be in this form
 
@@ -317,7 +345,7 @@ The library you use in your programming language should do this automatically fo
 
 ### What scopes do you support?
 
-We support `destination/<slug>`,  `workspace` and `workspace:read`. You set this in the app creation and when you start the install flow. You have to use the same exact scope in both places otherwise you will get an invalid scope error when you start the error.
+We support `destination/<slug>`, `workspace` and `workspace:read`. You set this in the app creation and when you start the install flow. You have to use the same exact scope in both places otherwise you will get an invalid scope error when you start the error.
 
 ### What is the fastest way to get started? Do I have to learn OAuth to make an app?
 
@@ -337,8 +365,8 @@ In the future we will have UIs and APIs so you can update this information on yo
 
 ### I am getting malformed token when I try to access the API. What is wrong?
 
-* Your token could have expired. They expire every hour. You then have to hit the refresh endpoint to get a new access_token. Make sure you pass in the correct install_name and client_id and client_secret in that request
-* You are trying to take an action you don’t have permission for. So write to a resource when you only have `workspace:read` permission. If you need write access then create a new app with `workspace` permission and then re-install it.
+- Your token could have expired. They expire every hour. You then have to hit the refresh endpoint to get a new access_token. Make sure you pass in the correct install_name and client_id and client_secret in that request
+- You are trying to take an action you don’t have permission for. So write to a resource when you only have `workspace:read` permission. If you need write access then create a new app with `workspace` permission and then re-install it.
 
 ### Will you send CSRF state back when you redirect?
 
@@ -352,7 +380,7 @@ Yes. This confirms to the OAuth spec and is done for security
 
 You already installed the app on this workspace so you can’t install it again. You can use your current `access_token` to simply access resources on this workspace.
 
-When an install happened you should have received a segment `workspace` and  `install_name` so you can store it in your own db along with the user’s info. When the user tries to install this app again, you can check your db and see that they already installed your app, and can skip the install flow.
+When an install happened you should have received a segment `workspace` and `install_name` so you can store it in your own db along with the user’s info. When the user tries to install this app again, you can check your db and see that they already installed your app, and can skip the install flow.
 
 ### OK I managed to create an App. How do I use your APIs?
 
