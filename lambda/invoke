@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+var fs = require('fs');
+
+var AWS = require('aws-sdk');
+var Lambda = new AWS.Lambda({
+    endpoint: 'http://127.0.0.1:3001/',
+});
+
+Lambda.invoke({
+    ClientContext: new Buffer('{"apiKey": "abcd1234"}').toString('base64'),
+    FunctionName: "ProcessEventsFunction",
+    Payload: fs.readFileSync("event.json"),
+}, function(err, data) {
+    console.log("err", err)
+    console.log("data", data)
+})
