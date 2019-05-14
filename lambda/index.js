@@ -5,7 +5,7 @@ const integration_1 = require("@segment/integration-sdk/lib/integration");
 const webhook_1 = require("@slack/webhook");
 const responses_1 = require("@segment/integration-sdk/lib/responses");
 // update this to your Slack Webhook URL
-const WebhookURL = "https://hooks.slack.com/services/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";
+const WebhookURL = "https://hooks.slack.com/services/<REDACTED>/<REDACTED>/<REDACTED>";
 class MyIntegration extends integration_1.Integration {
     constructor(settings) {
         super();
@@ -31,22 +31,9 @@ class MyIntegration extends integration_1.Integration {
     }
 }
 exports.MyIntegration = MyIntegration;
-// const integration = new MyIntegration({
-//     apiKey: 'sdfasfs'
-// })
 exports.processEvents = async function (event, context) {
-    console.log(context);
-    const { apiKey } = context.clientContext.custom;
+    const { apiKey } = context.clientContext;
     const settings = { apiKey };
     const integration = new MyIntegration(settings);
     return await integration.handle(event);
 };
-exports.processEvents({
-    event: "track"
-}, {
-    clientContext: {
-        custom: {
-            apiKey: "abcd1234"
-        }
-    }
-});
