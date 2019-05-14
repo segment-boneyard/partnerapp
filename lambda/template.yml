@@ -7,7 +7,7 @@ Description: >
 Globals:
   Function:
     Runtime: nodejs10.x
-    Timeout: 4
+    Timeout: 3
 
 Outputs:
   LambdaARN:
@@ -38,7 +38,7 @@ Resources:
         Statement:
         - Effect: Allow
           Principal:
-            AWS: arn:aws:iam::595280932656:customer-lambda-prod-destination-access
+            AWS: arn:aws:iam::595280932656:root
           Action: sts:AssumeRole
 
   ProcessEventsFunction:
