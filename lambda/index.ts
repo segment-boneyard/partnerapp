@@ -38,7 +38,11 @@ export class MyIntegration extends Integration {
     }
 }
 
-exports.processEvents = async function (event: Track, context: Context) {
+// const integration = new MyIntegration({
+//     apiKey: 'sdfasfs'
+// })
+
+export const processEvents = async function (event: any, context: any) {
     console.log(context)
     const { apiKey } = context.clientContext.custom;
     const settings = { apiKey }
@@ -46,7 +50,7 @@ exports.processEvents = async function (event: Track, context: Context) {
     return await integration.handle(event)
 }
 
-exports.processEvents(
+processEvents(
     {
         event: "track"
     },
