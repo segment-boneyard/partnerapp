@@ -1,0 +1,11 @@
+{
+  "type": "track",
+  "event": "Registered",
+  "userId": "test-user-23js8",
+  "timestamp": "2019-04-08T01:19:38.931Z",
+  "email": "test@example.com",
+  "properties": {
+    "plan": "Pro Annual",
+    "accountType": "Facebook"
+  }
+}
