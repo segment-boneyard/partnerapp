@@ -1,9 +1,8 @@
 // index.ts
-import { Integration } from '@segment/integration-sdk/lib/integration'
 import { Track, Identify } from '@segment/integration-sdk/lib/facade/events'
-import { IncomingWebhook } from '@slack/webhook';
-
+import { Integration } from '@segment/integration-sdk/lib/integration'
 import { Success, EventNotSupported, HttpResponse } from '@segment/integration-sdk/lib/responses'
+import { IncomingWebhook, IncomingWebhookSendArguments } from '@slack/webhook';
 
 interface Settings {
     apiKey: string
@@ -18,11 +17,34 @@ export class MyIntegration extends Integration {
     }
 
     async track(event: Track) {
-        const h = new IncomingWebhook(WebhookURL)
+        const evt = event.toJSON()
+        const props = event.properties.toJSON()
+
+        const args: IncomingWebhookSendArguments = {
+            text: `${evt.email} ${event.event}`,
+            attachments: [
+                {
+                    author_name: `UserID: ${event.userId}`,
+                    title: `${props.plan} plan`,
+                    fields: [
+                        {
+                            title: "Plan",
+                            value: props.plan as string,
+                            short: false,
+                        },
+                        {
+                            title: "Account Type",
+                            value: props.accountType as string,
+                            short: false,
+                        },
+                    ],
+                },
+            ]
+        }
+
         try {
-            const resp = await h.send({
-                text: event.event,
-            })
+            const h = new IncomingWebhook(WebhookURL)
+            const resp = await h.send(args)
             return new Success(resp.text)
         } catch (err) {
             return new HttpResponse({

@@ -42,14 +42,21 @@ test('transforms to Slack event and performs POST with auth', async () => {
         }
     }
 
-    const slack = nock("https://hooks.slack.com")
-    .post(/\/services\/.*\/.*\/.*/, slackEvent, {
-        reqheaders: {
-            "Authorization": "Basic abcd1234",
-        },
-    })
-    .reply(200);
+    // CORS
+    nock("https://hooks.slack.com")
+        .options(/.*/)
+        .reply(200, "",
+            {
+                'access-control-allow-credentials': 'true',
+                'access-control-allow-headers': 'User-Agent',
+                'access-control-allow-origin': 'http://localhost',
+            },
+        );
 
-    processEvents(segmentEvent, context)
+    const slack = nock("https://hooks.slack.com")
+        .post(/\/services\/.*\/.*\/.*/, slackEvent)
+        .reply(200);
+
+    await processEvents(segmentEvent, context)
     expect(await slack.done())
 });
