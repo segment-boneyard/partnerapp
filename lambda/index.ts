@@ -60,8 +60,8 @@ export class MyIntegration extends Integration {
 }
 
 export const processEvents = async function (event: any, context: any) {
-    const { apiKey } = context.clientContext;
-    const settings = { apiKey }
+    // const { apiKey } = "foo";
+    const settings = { apiKey: "foo" }
     const integration = new MyIntegration(settings)
     return await integration.handle(event)
 }
