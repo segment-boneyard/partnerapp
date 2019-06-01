@@ -1,0 +1,16 @@
+{
+  "event": {
+    "anonymousId": "anonymous-1",
+    "name": "Home",
+    "properties": {
+      "variation": "blue signup button"
+    },
+    "timestamp": "2019-05-31T23:27:37Z",
+    "type": "screen",
+    "userId": "identified-1"
+  },
+  "settings": {
+    "apiKey": "abcd1234"
+  },
+  "version": "1.0"
+}

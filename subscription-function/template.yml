@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: >
+  Segment Subscription Function
+  https://segment.com/docs/destinations/amazon-lambda/
+
+Globals:
+  Function:
+    Runtime: nodejs10.x
+    Timeout: 3
+
+Resources:
+  ProcessEventsFunction:
+    Properties:
+      CodeUri: .
+      Handler: index.processEvents
+    Type: AWS::Serverless::Function
+
+Transform: AWS::Serverless-2016-10-31
