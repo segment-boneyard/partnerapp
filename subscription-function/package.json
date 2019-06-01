@@ -1,0 +1,10 @@
+{
+  "name": "subscription-function",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^24.8.0",
+    "nock": "^10.0.6"
+  }
+}

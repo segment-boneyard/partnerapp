@@ -1,0 +1,15 @@
+{
+  "event": {
+    "anonymousId": "anonymous-1",
+    "name": "Signup",
+    "properties": {
+      "url": "https://segment.com/signup"
+    },
+    "timestamp": "2019-05-31T23:27:37Z",
+    "type": "page"
+  },
+  "settings": {
+    "apiKey": "abcd1234"
+  },
+  "version": "1.0"
+}
