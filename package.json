@@ -2,7 +2,7 @@
   "dependencies": {
     "client-oauth2": "^4.2.3",
     "dotenv": "^6.2.0",
-    "express": "^4.16.4",
+    "express": "^4.17.3",
     "request": "^2.88.0"
   }
 }
